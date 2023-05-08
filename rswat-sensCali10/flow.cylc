@@ -1,7 +1,7 @@
 [scheduling] # Define the tasks and when they should run
   [[graph]]
-    R1 = """ # R1 means run this graph once
-    ncores4 => analyse
+    R1 = """ # run this graph once
+    ncores5 & ncores9 => analyse
     """
 [runtime] # Define what each task should run
   [[root]] # Default settings inherited by all tasks
@@ -17,7 +17,7 @@
     [[[environment]]]
       TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
       SENS_CALI=10 # CHANGE
-  [[ncores4]]
+  [[ncores5]]
     script = """
       module purge
       module load intel
@@ -25,11 +25,24 @@
       cd $TOP_DIR
       work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
       mkdir $work_dir
-      srun Rscript sens10_ncores4.R $work_dir
-      #rm -rf $work_dir
+      srun Rscript sens10_ncores5.R $work_dir
+      rm -rf $work_dir
     """
     [[[directives]]]
-      --ntasks = 4
+      --ntasks = 5
+  [[ncores9]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      srun Rscript sens10_ncores9.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --ntasks = 9
    [[analyse]]
     platform = localhost
     script = """
