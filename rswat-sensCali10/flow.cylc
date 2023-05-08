@@ -1,0 +1,45 @@
+[scheduling] # Define the tasks and when they should run
+  [[graph]]
+    R1 = """ # R1 means run this graph once
+    ncores4 => analyse
+    """
+[runtime] # Define what each task should run
+  [[root]] # Default settings inherited by all tasks
+    platform = mahuika-slurm # Run "cylc conf" to see platforms. 
+    [[[directives]]] # Default SLURM options for the tasks below
+       --account = nesi99999 # CHANGE
+       --hint = nomultithread
+       --partition = milan
+       --mem = 40GB
+       --time = 02:00:00
+       --nodes = 1
+       --cpus-per-task = 1
+    [[[environment]]]
+      TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
+      SENS_CALI=10 # CHANGE
+  [[ncores4]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      srun Rscript sens10_ncores4.R $work_dir
+      #rm -rf $work_dir
+    """
+    [[[directives]]]
+      --ntasks = 4
+   [[analyse]]
+    platform = localhost
+    script = """
+        cd $TOP_DIR
+        ranstr=$(echo $RANDOM | md5sum | head -c 20)
+        tablename="table-${ranstr}.txt"
+        sqlite3 $CYLC_WORKFLOW_RUN_DIR/log/db "select job_id, cycle, name, submit_num, time_run, time_run_exit from task_jobs;" > $tablename
+        cat $tablename
+        # create plot
+        module load R
+        Rscript analyse.R $SENS_CALI $tablename
+    """
+
