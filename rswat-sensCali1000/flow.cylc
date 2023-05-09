@@ -1,7 +1,7 @@
 [scheduling] # Define the tasks and when they should run
   [[graph]]
     R1 = """ # run this graph once
-    ncores4 & ncores8 & ncores16 & ncores32  => analyse
+    ncores4 & ncores8 & ncores16 & ncores32 & ncores8-large  => analyse
     """
 [runtime] # Define what each task should run
   [[root]] # Default settings inherited by all tasks
@@ -44,6 +44,20 @@
     """
     [[[directives]]]
       --ntasks = 9
+  [[ncores8-large]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      mpirun -bootstrap ssh Rscript sens${SENS_CALI}_ncores8.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --ntasks = 9
+      --partition = large
   [[ncores16]]
     script = """
       module purge
