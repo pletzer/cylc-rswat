@@ -17,6 +17,7 @@
     [[[environment]]]
       TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
       SENS_CALI=100 # CHANGE
+      I_MPI_SPAWN = on
   [[ncores4]]
     script = """
       module purge
@@ -25,11 +26,11 @@
       cd $TOP_DIR
       work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
       mkdir $work_dir
-      srun Rscript sens${SENS_CALI}_ncores4.R $work_dir
+      mpirun -bootstrap ssh Rscript sens${SENS_CALI}_ncores4.R $work_dir
       rm -rf $work_dir
     """
     [[[directives]]]
-      --ntasks = 4
+      --ntasks = 5
   [[ncores8]]
     script = """
       module purge
@@ -38,11 +39,11 @@
       cd $TOP_DIR
       work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
       mkdir $work_dir
-      srun Rscript sens${SENS_CALI}_ncores8.R $work_dir
+      mpirun -bootstrap ssh Rscript sens${SENS_CALI}_ncores8.R $work_dir
       rm -rf $work_dir
     """
     [[[directives]]]
-      --ntasks = 8
+      --ntasks = 9
   [[ncores16]]
     script = """
       module purge
@@ -51,11 +52,11 @@
       cd $TOP_DIR
       work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
       mkdir $work_dir
-      srun Rscript sens${SENS_CALI}_ncores16.R $work_dir
+      mpirun -bootstrap ssh Rscript sens${SENS_CALI}_ncores16.R $work_dir
       rm -rf $work_dir
     """
     [[[directives]]]
-      --ntasks = 16
+      --ntasks = 17
    [[analyse]]
     platform = localhost
     script = """
