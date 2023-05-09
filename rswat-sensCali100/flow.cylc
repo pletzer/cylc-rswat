@@ -1,7 +1,7 @@
 [scheduling] # Define the tasks and when they should run
   [[graph]]
     R1 = """ # run this graph once
-    ncores5 & ncores9 => analyse
+    ncores4 & ncores8 & ncores16 => analyse
     """
 [runtime] # Define what each task should run
   [[root]] # Default settings inherited by all tasks
@@ -16,9 +16,8 @@
        --cpus-per-task = 1
     [[[environment]]]
       TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
-      SENS_CALI=10 # CHANGE
-      I_MPI_SPAWN = on
-  [[ncores5]]
+      SENS_CALI=100 # CHANGE
+  [[ncores4]]
     script = """
       module purge
       module load intel
@@ -26,12 +25,12 @@
       cd $TOP_DIR
       work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
       mkdir $work_dir
-      mpirun -bootstrap ssh Rscript sens${SENS_CALI}_ncores5.R $work_dir
+      srun Rscript sens${SENS_CALI}_ncores4.R $work_dir
       rm -rf $work_dir
     """
     [[[directives]]]
-      --ntasks = 5
-  [[ncores9]]
+      --ntasks = 4
+  [[ncores8]]
     script = """
       module purge
       module load intel
@@ -39,17 +38,30 @@
       cd $TOP_DIR
       work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
       mkdir $work_dir
-      mpirun -bootstrap ssh Rscript sens${SENS_CALI}_ncores9.R $work_dir
+      srun Rscript sens${SENS_CALI}_ncores8.R $work_dir
       rm -rf $work_dir
     """
     [[[directives]]]
-      --ntasks = 9
+      --ntasks = 8
+  [[ncores16]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      srun Rscript sens${SENS_CALI}_ncores16.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --ntasks = 16
    [[analyse]]
     platform = localhost
     script = """
         cd $TOP_DIR
         ranstr=$(echo $RANDOM | md5sum | head -c 20)
-        tablename="table-${ranstr}.txt"
+        tablename="table-sens${SENS_CALI}-${ranstr}.txt"
         sqlite3 $CYLC_WORKFLOW_RUN_DIR/log/db "select job_id, cycle, name, submit_num, time_run, time_run_exit from task_jobs;" > $tablename
         cat $tablename
         # create plot
