@@ -1,0 +1,97 @@
+[scheduling] # Define the tasks and when they should run
+  [[graph]]
+    R1 = """ # run this graph once
+    ncores4 & ncores8 & ncores16 & ncores32 & ncores8-large  => analyse
+    """
+[runtime] # Define what each task should run
+  [[root]] # Default settings inherited by all tasks
+    platform = mahuika-slurm # Run "cylc conf" to see platforms. 
+    [[[directives]]] # Default SLURM options for the tasks below
+       --account = nesi99999 # CHANGE
+       --hint = nomultithread
+       --partition = milan
+       --mem = 40GB
+       --time = 06:00:00
+       --ntasks = 1
+    [[[environment]]]
+      TOP_DIR="/nesi/nobackup/pletzera/rswat/" # CHANGE
+      SENS_CALI=1000 # CHANGE
+  [[ncores4]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      Rscript sens${SENS_CALI}_ncores4.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --cpus-per-task = 4
+  [[ncores8]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      Rscript sens${SENS_CALI}_ncores8.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --cpus-per-task = 8
+  [[ncores8-large]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      Rscript sens${SENS_CALI}_ncores8.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --cpus-per-task = 8
+      --partition = large
+  [[ncores16]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      Rscript sens${SENS_CALI}_ncores16.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --cpus-per-task = 16
+  [[ncores32]]
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      Rscript sens${SENS_CALI}_ncores32.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]]
+      --cpus-per-task = 32
+   [[analyse]]
+    platform = localhost
+    script = """
+        cd $TOP_DIR
+        ranstr=$(echo $RANDOM | md5sum | head -c 20)
+        tablename="table-sens${SENS_CALI}-${ranstr}.txt"
+        sqlite3 $CYLC_WORKFLOW_RUN_DIR/log/db "select job_id, cycle, name, submit_num, time_run, time_run_exit from task_jobs;" > $tablename
+        cat $tablename
+        # create plot
+        module load R
+        Rscript analyse.R $SENS_CALI $tablename
+    """
+
