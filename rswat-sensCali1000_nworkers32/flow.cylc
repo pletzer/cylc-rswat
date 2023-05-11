@@ -1,0 +1,64 @@
+[scheduling] # Define the tasks and when they should run
+  [[graph]]
+    R1 = """ # run this graph once
+    ncores32_ssh? & ncores32_slurm? & ncores32_slurm_mlx? & ncores32_slurm_mlx_nopin? => analyse
+    """
+[runtime] # Define what each task should run
+  [[root]] # Default settings inherited by all tasks
+    platform = mahuika-slurm # Run "cylc conf" to see platforms. 
+    execution retry delays = 5*PT10S # retry up to 5 times with a 10 sec delay
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      I_MPI_SPAWN=on mpirun -bootstrap $BOOTSTRAP_SERVER Rscript sens${SENS_CALI}_ncores32.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]] # Default SLURM options for the tasks below
+       --account = nesi99999 # CHANGE
+       --hint = nomultithread
+       --partition = milan
+       --mem = 40GB
+       --time = 06:00:00
+       --nodes = 1
+       --ntasks = 33
+       --cpus-per-task = 1
+    [[[environment]]]
+      TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
+      SENS_CALI="1000"
+      BOOTSTRAP_SERVER="slurm"
+  [[ncores32_ssh]]
+    [[[environment]]]
+      BOOTSTRAP_SERVER="ssh"
+  [[ncores32_slurm]]
+    [[[environment]]]
+      BOOTSTRAP_SERVER="slurm"
+  [[ncores32_slurm_mlx]]
+    [[[environment]]]
+      # https://community.intel.com/t5/Intel-oneAPI-HPC-Toolkit/MPI-Init-error-under-Slurm/m-p/1367321#M9275
+      # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/global-hydra-options.html#SECTION_FF7731B57A484C37BC16862C9ABC0866
+      FI_PROVIDER=mlx
+      BOOTSTRAP_SERVER="slurm"
+  [[ncores32_slurm_mlx_nopin]]
+    [[[environment]]]
+      # https://community.intel.com/t5/Intel-oneAPI-HPC-Toolkit/MPI-Init-error-under-Slurm/m-p/1367321#M9275
+      # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/global-hydra-options.html#SECTION_FF7731B57A484C37BC16862C9ABC0866
+      FI_PROVIDER=mlx
+      I_MPI_PIN_RESPECT_CPUSET=0
+      BOOTSTRAP_SERVER="slurm"
+  [[analyse]]
+    platform = localhost
+    script = """
+        cd $TOP_DIR
+        ranstr=$(echo $RANDOM | md5sum | head -c 20)
+        tablename="table-sens${SENS_CALI}-${ranstr}.txt"
+        sqlite3 $CYLC_WORKFLOW_RUN_DIR/log/db "select job_id, cycle, name, submit_num, time_run, time_run_exit from task_jobs;" > $tablename
+        cat $tablename
+        # create plot
+        module load R
+        Rscript analyse.R $SENS_CALI $tablename
+    """
+
