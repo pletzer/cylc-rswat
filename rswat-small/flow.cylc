@@ -1,0 +1,53 @@
+[task parameters]
+    # run multiple instances
+    m = 0..9
+[scheduling] # Define the tasks and when they should run
+
+  [[graph]]
+    R1 = """ # run this graph once
+    milan-slurm<m> => analyse
+    """
+[runtime] # Define what each task should run
+  [[root]] # Default settings inherited by all tasks
+    platform = mahuika-slurm # Run "cylc conf" to see platforms. 
+    execution retry delays = 1*PT10S # retry
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      export I_MPI_SPAWN=on
+      export I_MPI_DEBUG=10
+      export FI_LOG_LEVEL=debug
+      export I_MPI_PIN_RESPECT_CPUSET=0
+      mpirun -bootstrap slurm Rscript small.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]] # Default SLURM options for the tasks below
+       --account = nesi99999 # CHANGE
+       --hint = nomultithread
+       --mem = 40GB
+       --time = 00:20:00
+       --nodes = 2
+       --ntasks = 4
+       --cpus-per-task = 1
+    [[[environment]]]
+      TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
+  [[milan-slurm<m>]]
+    [[[directives]]]
+      --partition = milan
+  [[analyse]]
+    platform = localhost
+    script = """
+        cd $TOP_DIR
+        ranstr=$(echo $RANDOM | md5sum | head -c 20)
+        tablename="table-small-${ranstr}.txt"
+        sqlite3 $CYLC_WORKFLOW_RUN_DIR/log/db "select job_id, cycle, name, submit_num, time_run, time_run_exit from task_jobs;" > $tablename
+        cat $tablename
+        # create plot
+        module load R
+        Rscript analyse_small.R $tablename 12
+    """
+
