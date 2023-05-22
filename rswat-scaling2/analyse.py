@@ -9,9 +9,10 @@ import seaborn as sn
 
 plt.xticks(rotation=45)
 
+case = "rswat-scaling2"
 
 #rundir = os.environ['CYLC_WORKFLOW_RUN_DIR']
-rundir = '/home/pletzera/cylc-run/rswat-scaling'
+rundir = f'/home/pletzera/cylc-run/{case}'
 status_files = glob.glob(rundir + '/runN/log/job/1/run*_m*/NN/job.status')
 
 init_times = []
@@ -51,12 +52,12 @@ for sf in status_files:
     exec_times.append(-1)
 
 df = pd.DataFrame({'job_id': job_ids, 'exec_time': exec_times, 'nworkers': nworkers})
-df.to_csv('rswat-scaling.csv')
+df.to_csv(f'{case}.csv')
 
 print(df)
 
 sn.barplot(data=df, x='job_id', y='exec_time', hue='nworkers')
 #plt.tight_layout()
-plt.savefig('rswat-scaling.png', bbox_inches="tight")
+plt.savefig(f'{case}.png', bbox_inches="tight")
 
 
