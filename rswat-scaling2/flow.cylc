@@ -1,0 +1,49 @@
+[task parameters]
+    # run multiple instances
+    m = 0..1
+[scheduling] # Define the tasks and when they should run
+  [[graph]]
+    R1 = """ # run this graph once
+    run21<m>? => analyse
+    """
+[runtime] # Define what each task should run
+  [[root]] # Default settings inherited by all tasks
+    platform = mahuika-slurm # Run "cylc conf" to see platforms. 
+    execution retry delays = 1*PT10S # retry
+    script = """
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+      export I_MPI_DEBUG=10
+      export FI_LOG_LEVEL=debug
+      export I_MPI_SPAWN=on
+      export I_MPI_PIN_RESPECT_CPUSET=0
+      export FI_PROVIDER=mlx
+      mpirun -bootstrap slurm Rscript medium.R $work_dir
+      rm -rf $work_dir
+    """
+    [[[directives]]] # Default SLURM options for the tasks below
+       --account = nesi99999 # CHANGE
+       --hint = nomultithread
+       --mem = 40GB
+       --time = 01:00:00
+       --nodes = 2
+       --cpus-per-task = 1
+       --partition = milan
+    [[[environment]]]
+      TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
+  [[run21<m>]]
+    [[[directives]]]
+      --ntasks = 21
+  [[analyse]]
+    platform = localhost
+    script = """
+        # create plot
+        module load Python
+        cd /nesi/nobackup/pletzera/cylc-rswat/rswat-scaling2
+        python analyse.py
+    """
+
