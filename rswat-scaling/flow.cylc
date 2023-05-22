@@ -52,6 +52,7 @@
 
       echo "run..."
       echo "mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir"
+      mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir"
 
       echo "clean up"
       rm -rf $work_dir
@@ -60,8 +61,8 @@
     [[[directives]]] # Default SLURM options for the tasks below
        --account = nesi99999 # CHANGE
        --hint = nomultithread
-       --mem = 1GB # 40GB
-       --time = 00:05:00 # 01:00:00
+       --mem = 40GB
+       --time = 01:00:00
        --cpus-per-task = 1
        --partition = milan
        --ntasks= {{ N }}
@@ -69,6 +70,10 @@
   [[analyse]]
     platform = localhost
     script = """
+    module purge
+    module load Python
+    cd /nesi/nobackup/pletzera/cylc-rswat/rswat-scaling
     echo "Running analyse in directory $(pwd)..."
+    python analyse.py
     """
 
