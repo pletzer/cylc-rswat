@@ -20,6 +20,12 @@
   [[prep{{ N }}<m>]]
     script = """
     echo "Running prep for {{ N }} and m=${CYLC_TASK_PARAM_m} in directory $(pwd)... "
+    cd $TOP_DIR
+    echo "now in $(pwd)"
+    INPUT_FILE="scaling{{ N }}_m${CYLC_TASK_PARAM_m}.R"
+    echo "editing $BASE_INPUT_FILE to produce $INPUT_FILE"
+    cat $BASE_INPUT_FILE | perl -ne "s/ncores\s*\<\-\s*\d+/ncores <- {{ N }}/; print;" > $INPUT_FILE
+    grep ncores $INPUT_FILE
     """
   [[run{{ N }}<m>]]
     platform = mahuika-slurm # Run "cylc conf" to see platforms. 
