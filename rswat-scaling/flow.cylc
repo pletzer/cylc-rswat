@@ -52,7 +52,7 @@
 
       echo "run..."
       echo "mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir"
-      mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir"
+      mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir
 
       echo "clean up"
       rm -rf $work_dir
