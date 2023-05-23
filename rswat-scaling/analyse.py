@@ -30,7 +30,7 @@ for sf in status_files:
   scs = '?'
   m = re.search(r'run(\d+)\_', sf)
   if m:
-    nw = m.group(1)
+    nw = int(m.group(1)) - 1
 
   for line in open(sf).readlines():
 
