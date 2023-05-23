@@ -20,16 +20,23 @@ exit_times = []
 exec_times = []
 job_ids = []
 nworkers = []
+success = []
 for sf in status_files:
   print(sf)
   init_time = float('inf')
   exit_time = float('inf')
   job_id = -1
   nw = 0
+  scs = '?'
   m = re.search(r'run(\d+)\_', sf)
   if m:
     nw = m.group(1)
+
   for line in open(sf).readlines():
+
+    m = re.match(r'CYLC_JOB_EXIT=(\w+)', line)
+    if m:
+      scs = m.group(1)
     m = re.match(r'CYLC_JOB_ID=(\d+)', line)
     if m:
       job_id = int(m.group(1))
@@ -46,16 +53,20 @@ for sf in status_files:
   exit_times.append(exit_time)
   job_ids.append(job_id)
   nworkers.append(nw)
+  success.append(scs)
   try:
     exec_times.append( (exit_time - init_time).seconds )
   except:
     exec_times.append(-1)
 
-df = pd.DataFrame({'job_id': job_ids, 'exec_time': exec_times, 'nworkers': nworkers})
+df = pd.DataFrame({'job_id': job_ids, 
+                   'exec_time': exec_times, 
+		   'nworkers': nworkers,
+		   'success': success})
 df.to_csv(f'{case}.csv')
 
 print(df)
-sn.barplot(data=df, x='job_id', y='exec_time', hue='nworkers')
+sn.barplot(data=df[df.success == 'SUCCEEDED'], x='job_id', y='exec_time', hue='nworkers')
 #plt.tight_layout()
 plt.savefig(f'{case}.png', bbox_inches="tight")
 
