@@ -66,8 +66,10 @@ df = pd.DataFrame({'job_id': job_ids,
 df.to_csv(f'{case}.csv')
 
 print(df)
-sn.barplot(data=df[df.success == 'SUCCEEDED'], x='job_id', y='exec_time', hue='nworkers')
-#plt.tight_layout()
+sn.lineplot(data=df[df.success == 'SUCCEEDED'], x='nworkers', y='exec_time', errorbar='sd')
+plt.xlim([0, 100])
+plt.ylim([0, df.exec_time.max()])
+plt.title('sensCaliCommand = 500')
 plt.savefig(f'{case}.png', bbox_inches="tight")
 
 
