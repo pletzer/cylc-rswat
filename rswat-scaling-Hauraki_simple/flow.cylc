@@ -1,0 +1,82 @@
+#!Jinja2
+[scheduler]
+{% set NS = 11, 21, 51 %}
+[task parameters]
+    # run multiple instances
+    m = 0..2
+[scheduling] # Define the tasks and when they should run
+  [[graph]]
+    R1 = """ # run this graph once
+    {% for N in NS %} 
+      prep{{ N }}<m> => run{{ N }}<m>? => analyse
+    {% endfor %}
+    """
+[runtime] # Define what each task should run
+  [[root]]
+    [[[environment]]]
+      BASE_INPUT_FILE="scaling.R"
+      HOME_DIR="/nesi/nobackup/pletzera/cylc-rswat/rswat-scaling_Hauraki_simple"
+      TOP_DIR="/nesi/nobackup/pletzera/rswat2/" # CHANGE
+  {% for N in NS %}
+  [[prep{{ N }}<m>]]
+    script = """
+    cp $HOME_DIR/$BASE_INPUT_FILE $TOP_DIR
+    echo "Running prep for {{ N }} and m=${CYLC_TASK_PARAM_m} in directory $(pwd)... "
+    cd $TOP_DIR
+    echo "now in $(pwd)"
+    INPUT_FILE="scaling{{ N }}_m${CYLC_TASK_PARAM_m}.R"
+    echo "editing $BASE_INPUT_FILE to produce $INPUT_FILE"
+    cat $BASE_INPUT_FILE | perl -ne "s/ncores\s*\<\-\s*\d+/ncores <- {{ N }}/; print;" > $INPUT_FILE
+    grep ncores $INPUT_FILE
+    """
+  [[run{{ N }}<m>]]
+    platform = mahuika-slurm # Run "cylc conf" to see platforms. 
+    execution retry delays = 1*PT10S # retry
+    script = """
+    echo "Running run for {{ N }} and m=${CYLC_TASK_PARAM_m} in directory $(pwd)... "
+      module purge
+      module load intel
+      module load R
+      cd $TOP_DIR
+
+      INPUT_FILE="scaling{{ N }}_m${CYLC_TASK_PARAM_m}.R"
+
+      echo "create the work directory"
+      work_dir="${TOP_DIR}/workingFolder-${SLURM_JOB_ID}"
+      mkdir $work_dir
+
+      echo "set up the run"
+      #export I_MPI_DEBUG=10
+      #export FI_LOG_LEVEL=debug
+      export I_MPI_SPAWN=on
+      export I_MPI_PIN_RESPECT_CPUSET=0
+      export FI_PROVIDER=mlx
+
+      echo "run..."
+      echo "mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir"
+      mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir
+
+      echo "clean up"
+      du -sh $work_dir
+      rm -rf $work_dir
+      rm $INPUT_FILE
+    """
+    [[[directives]]] # Default SLURM options
+       --account = nesi99999 # CHANGE
+       --hint = nomultithread
+       --mem = 80GB
+       --time = 10:00:00
+       --cpus-per-task = 1
+       --partition = milan
+       --ntasks= {{ N }}
+  {% endfor %}
+  [[analyse]]
+    platform = localhost
+    script = """
+    module purge
+    module load Python
+    cd $HOME_DIR
+    echo "Running analyse in directory $(pwd)..."
+    python analyse.py
+    """
+
