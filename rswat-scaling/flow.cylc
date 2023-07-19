@@ -1,9 +1,9 @@
 #!Jinja2
 [scheduler]
-{% set NS = 11, 21 %}
+{% set NS = 2, 5, 11, 21, 51, 101 %}
 [task parameters]
     # run multiple instances
-    m = 0..1
+    m = 0..10
 [scheduling] # Define the tasks and when they should run
   [[graph]]
     R1 = """ # run this graph once
@@ -19,6 +19,7 @@
   {% for N in NS %}
   [[prep{{ N }}<m>]]
     script = """
+    cp /nesi/nobackup/pletzera/cylc-rswat/rswat-scaling/scaling.R $TOP_DIR
     echo "Running prep for {{ N }} and m=${CYLC_TASK_PARAM_m} in directory $(pwd)... "
     cd $TOP_DIR
     echo "now in $(pwd)"
@@ -55,14 +56,15 @@
       mpirun -bootstrap slurm Rscript $INPUT_FILE $work_dir
 
       echo "clean up"
+      du -sh $work_dir
       rm -rf $work_dir
       rm $INPUT_FILE
     """
     [[[directives]]] # Default SLURM options for the tasks below
        --account = nesi99999 # CHANGE
        --hint = nomultithread
-       --mem = 40GB
-       --time = 01:00:00
+       --mem = 80GB
+       --time = 10:00:00
        --cpus-per-task = 1
        --partition = milan
        --ntasks= {{ N }}
